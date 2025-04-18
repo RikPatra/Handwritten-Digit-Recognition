@@ -162,7 +162,17 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script>
+        let model;
+
+        // Load the model when the page loads
+        async function loadModel() {
+            model = await tf.loadLayersModel('./model/model.json');
+            console.log('Model loaded');
+        }
+
+        document.addEventListener('DOMContentLoaded', loadModel);
         document.addEventListener('DOMContentLoaded', function() {
             // Canvas setup
             const canvas = document.getElementById('drawingCanvas');
@@ -321,16 +331,29 @@
                 }
             }
             
-            function predictDigit() {
+            async function predictDigit() {
                 // Get the canvas data as 28x28 grayscale
                 const processedData = preprocessCanvas();
-                
+
                 // Display the pixel grid (for visualization)
                 displayPixelGrid(processedData);
-                
-                // In a real implementation, you would send this data to your ML model
-                // For this demo, we'll simulate a prediction
-                simulatePrediction(processedData);
+
+                // Ensure the model is loaded
+                if (!model) {
+                    alert('Model is not loaded yet. Please wait.');
+                    return;
+                }
+
+                // Convert the processed data to a tensor
+                const inputTensor = tf.tensor([processedData]).reshape([1, 28, 28, 1]);
+
+                // Make a prediction
+                const prediction = model.predict(inputTensor);
+                const probabilities = await prediction.array();
+                const predictedDigit = probabilities[0].indexOf(Math.max(...probabilities[0]));
+
+                // Update the UI with the prediction
+                updatePredictionUI(predictedDigit, probabilities[0]);
             }
             
             function preprocessCanvas() {
